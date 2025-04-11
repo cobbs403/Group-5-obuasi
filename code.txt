@@ -1,0 +1,71 @@
+// C++ code with push button added
+
+int trigPin = 10;
+int echoPin = 11;
+float time, distance;
+
+int buzzer = 2;
+int redled = 3;
+int buttonPin = 4;  // Button connected to pin 4
+
+bool systemOn = false;  // Keeps track of whether the system is active
+bool lastButtonState = HIGH;
+
+void setup() {
+  pinMode(trigPin, OUTPUT);  
+  pinMode(echoPin, INPUT);
+  pinMode(buzzer, OUTPUT);  
+  pinMode(redled, OUTPUT);
+  pinMode(buttonPin, INPUT_PULLUP);  // Use internal pull-up resistor
+
+  Serial.begin(9600);
+  Serial.println(" ");
+  Serial.println("Water Level Monitoring");  
+}
+
+void loop() {
+  // Read the current button state
+  bool buttonState = digitalRead(buttonPin);
+
+  // Detect button press (LOW when pressed due to INPUT_PULLUP)
+  if (buttonState == LOW && lastButtonState == HIGH) {
+    systemOn = !systemOn;  // Toggle system state
+    Serial.print("System is now: ");
+    Serial.println(systemOn ? "ON" : "OFF");
+    delay(300);  // Debounce delay
+  }
+
+  lastButtonState = buttonState;
+
+  if (systemOn) {
+    // Trigger ultrasonic pulse
+    digitalWrite(trigPin, LOW);  
+    delayMicroseconds(2);  
+    digitalWrite(trigPin, HIGH);  
+    delayMicroseconds(10);  
+    digitalWrite(trigPin, LOW);  
+
+    // Read echo and calculate distance
+    time = pulseIn(echoPin, HIGH);
+    distance = (time * 0.034) / 2;
+    Serial.print("Distance: ");
+    Serial.println(distance);  
+
+    // Leak detection logic
+    if (distance < 40 || distance > 250) {
+      Serial.println("Water is Leaking!"); 
+      digitalWrite(buzzer, HIGH);
+      digitalWrite(redled, HIGH);
+    } else {
+      Serial.println("Normal"); 
+      digitalWrite(buzzer, LOW);
+      digitalWrite(redled, LOW);
+    }
+  } else {
+    // If system is off, make sure outputs are off
+    digitalWrite(buzzer, LOW);
+    digitalWrite(redled, LOW);
+  }
+
+  delay(200);  // Small delay for stability
+}
